@@ -20,6 +20,10 @@ SELECT Pid, Name, ParentName FROM pslist()
  
 ![Endpoint Enrollment](images/velociraptor-client-enrolled.png)
  
+![Pslist Hunt](images/velociraptor-pslist-hunt.png)
+ 
+![VQL Process Hierarchy](images/vql-process-hierarchy.png)
+ 
 ## PowerShell and Process Threat Hunting in Splunk
  
 Two SPL queries were built against the forwarded logs:
@@ -37,4 +41,3 @@ Velociraptor and Splunk answer different questions: Velociraptor gives point-in-
 - `README.md`
 - `Velociraptor_Splunk_Writeup.pdf`
 - `images/`
- 
