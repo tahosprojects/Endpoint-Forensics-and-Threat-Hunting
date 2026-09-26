@@ -1,146 +1,40 @@
 # Endpoint Forensics and Threat Hunting Lab
-
-## Velociraptor + Splunk Enterprise
-
-This project demonstrates endpoint monitoring, artifact collection, and threat hunting using Velociraptor and Splunk Enterprise. A Windows Server 2022 endpoint hosted on AWS EC2 was enrolled into Velociraptor, monitored remotely, and integrated with Splunk for centralized log collection and analysis.
-
-The objective of this lab was to gain hands-on experience with endpoint visibility, process analysis, PowerShell monitoring, and SIEM-based threat hunting workflows.
-
----
-
-## Skills Demonstrated
-
-* Endpoint Detection and Response (EDR)
-* Velociraptor deployment and client enrollment
-* Artifact collection and analysis
-* VQL (Velociraptor Query Language)
-* Process hierarchy analysis
-* Splunk Enterprise administration
-* Windows Event Log analysis
-* PowerShell monitoring
-* Threat hunting
-* Security Operations Center (SOC) workflows
-* Endpoint telemetry investigation
-
----
-
-## Tools Used
-
-| Tool                       | Purpose                                     |
-| -------------------------- | ------------------------------------------- |
-| Velociraptor               | Endpoint monitoring and artifact collection |
-| Splunk Enterprise          | SIEM and log analysis                       |
-| Splunk Universal Forwarder | Windows log forwarding                      |
-| AWS EC2                    | Remote Windows Server environment           |
-| Windows Server 2022        | Endpoint under investigation                |
-| PowerShell                 | Administration and event generation         |
-| VQL                        | Endpoint artifact querying                  |
-
----
-
+ 
+Endpoint detection and log analysis using Velociraptor and Splunk Enterprise. A Windows Server 2022 endpoint on AWS EC2 was enrolled into Velociraptor for live forensics, then wired into Splunk via the Universal Forwarder for SPL-based threat hunting.
+ 
+**Stack:** Velociraptor v0.75.6 · Splunk Enterprise v10.2.2 · Splunk Universal Forwarder · AWS EC2 (Windows Server 2022) · VQL · SPL
+ 
+**Full write-up:** [Velociraptor_Splunk_Writeup.pdf](Velociraptor_Splunk_Writeup.pdf) covers the full deployment, VQL queries, and SPL threat hunting in depth.
+ 
 ## Lab Environment
-
-The environment consisted of:
-
-* Local Velociraptor Server
-* AWS EC2 Windows Server 2022 Endpoint
-* Splunk Enterprise Instance
-* Splunk Universal Forwarder
-
-The Windows endpoint was enrolled into Velociraptor and configured to forward logs into Splunk Enterprise for centralized analysis.
-
----
-
-## Endpoint Enrollment
-
-The Windows Server endpoint was successfully enrolled into Velociraptor and maintained an active connection to the server.
-
-![Velociraptor Client Enrollment](images/velociraptor-client-enrolled.png)
-
-This provided remote visibility into endpoint activity and allowed forensic artifacts to be collected directly from the system.
-
----
-
-## Artifact Collection
-
-Velociraptor was used to execute the `Windows.System.Pslist` artifact to collect process information from the endpoint.
-
-![Windows.System.Pslist Hunt](images/velociraptor-pslist-hunt.png)
-
-The artifact returned information including:
-
-* Process Names
-* Process IDs (PIDs)
-* Parent Process IDs (PPIDs)
-* Command Line Arguments
-* Running System Processes
-
-This provided a baseline view of active processes on the endpoint.
-
----
-
-## Process Hierarchy Analysis with VQL
-
-A Velociraptor notebook was used to analyze process relationships using VQL.
-
-![Process Hierarchy Analysis](images/vql-process-hierarchy.png)
-
-Parent-child process relationships were examined to understand normal operating system behavior and identify potentially suspicious execution chains.
-
-Examples observed included:
-
-* System
-* Registry
-* smss.exe
-* csrss.exe
-* wininit.exe
-* services.exe
-* lsass.exe
-
-Understanding process lineage is an important skill for endpoint investigations and threat hunting.
-
----
-
-## PowerShell Threat Hunting with Splunk
-
-PowerShell Operational logs were forwarded into Splunk and analyzed using Event ID 4104.
-
-```spl
-sourcetype="WinEventLog:Microsoft-Windows-PowerShell/Operational" EventCode=4104
+ 
+- Local Velociraptor server (Windows 10) with a remote AWS EC2 Windows Server 2022 endpoint enrolled over mutual TLS
+- Splunk Enterprise instance receiving forwarded Windows event logs via the Universal Forwarder
+## Endpoint Enrollment and Artifact Collection
+ 
+The EC2 endpoint enrolled successfully with full host metadata populated (OS release, architecture, MAC address, first/last seen). A hunt using the `Windows.System.Pslist` artifact returned 73 process rows in 1 second, and a live VQL query in the Velociraptor Notebook mapped the full 75-row process tree by parent-child relationship:
+ 
 ```
-
+SELECT Pid, Name, ParentName FROM pslist()
+```
+ 
+![Endpoint Enrollment](images/velociraptor-client-enrolled.png)
+ 
+## PowerShell and Process Threat Hunting in Splunk
+ 
+Two SPL queries were built against the forwarded logs:
+ 
+- **Event ID 4104 (script block logging):** extracted the full text of executed PowerShell commands, matching 49 events and 10 distinct commands, confirming script block logging captures real administrative activity even when invoked through automation.
+- **Event ID 4688 (process creation):** a timechart across 110 events and 91 unique process names surfaced a clear burst of Splunk worker processes in a four-minute window, reconstructing a precise timeline of when the forwarder was configured on the endpoint.
 ![PowerShell Event ID 4104](images/splunk-powershell-4104.png)
-
-Event ID 4104 captures PowerShell Script Block Logging, allowing analysts to review executed PowerShell commands and identify potentially suspicious activity.
-
-This telemetry is commonly used during investigations involving malicious scripts, administrative abuse, persistence mechanisms, and attacker tradecraft.
-
----
-
-## Key Findings
-
-* Successfully enrolled a remote Windows Server endpoint into Velociraptor.
-* Collected endpoint process artifacts using Windows.System.Pslist.
-* Analyzed process hierarchy using VQL notebooks.
-* Forwarded Windows event logs into Splunk Enterprise.
-* Queried PowerShell Operational logs using Event ID 4104.
-* Practiced endpoint-focused threat hunting techniques.
-* Improved understanding of endpoint telemetry and forensic workflows.
-
----
-
-## Key Takeaways
-
-This project strengthened my understanding of endpoint visibility and incident investigation workflows. By combining Velociraptor's artifact collection capabilities with Splunk's search and analytics features, I gained hands-on experience identifying and analyzing endpoint activity from both an EDR and SIEM perspective.
-
-The most valuable takeaway was learning how process artifacts and PowerShell telemetry can be leveraged to investigate system activity and support threat hunting efforts.
-
----
-
+ 
+## Key Takeaway
+ 
+Velociraptor and Splunk answer different questions: Velociraptor gives point-in-time forensic detail on a single endpoint, Splunk gives a searchable, aggregated view across time. Working with both together, rather than either alone, is what a real detection stack looks like.
+ 
 ## Repository Contents
-
-* Velociraptor deployment screenshots
-* Artifact collection examples
-* VQL notebook analysis
-* Splunk threat hunting queries
-* Supporting documentation and writeups
+ 
+- `README.md`
+- `Velociraptor_Splunk_Writeup.pdf`
+- `images/`
+ 
